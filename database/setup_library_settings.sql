@@ -16,7 +16,7 @@ INSERT INTO Library_Settings (setting_key, setting_value) VALUES
     ('library_hours', 'Mon-Fri: 9:00 AM - 5:00 PM'),
     ('library_location', 'Central Library, NSTU Campus')
 ON DUPLICATE KEY UPDATE 
-    setting_value = VALUES(setting_value);
+    setting_key = VALUES(setting_key);
 
 -- Verify insertion
 SELECT * FROM Library_Settings;

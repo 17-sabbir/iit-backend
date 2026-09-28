@@ -1,17 +1,20 @@
-# Enable CORS
-Header set Access-Control-Allow-Origin "*"
-Header set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
-Header set Access-Control-Allow-Headers "Content-Type, Authorization"
+Options -Indexes
+DirectoryIndex public/index.php
 
-# Enable error reporting (disable in production)
-php_flag display_errors on
-php_value error_reporting E_ALL
+RewriteEngine On
 
-# Set default charset
+# Never expose application internals or dependency sources directly.
+RewriteRule ^(?:config|database|migrations|tools|vendor|tcpdf)(?:/|$) - [F,L,NC]
+
+# Route PHP endpoint URLs through Laravel instead of executing legacy files directly.
+RewriteCond %{REQUEST_URI} !^/public/index\.php$ [NC]
+RewriteRule ^.+\.php$ public/index.php [L,QSA]
+
+# Route extensionless requests through Laravel's front controller.
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ public/index.php [L,QSA]
+
 AddDefaultCharset UTF-8
-
-# Protect config files
-<FilesMatch "^\.">
-    Order allow,deny
-    Deny from all
-</FilesMatch>
+php_flag display_errors off
+php_flag log_errors on

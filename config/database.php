@@ -1,47 +1,50 @@
 <?php
-// Set timezone to Asia/Dhaka
-date_default_timezone_set('Asia/Dhaka');
 
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization");
-header("Content-Type: application/json; charset=UTF-8");
-
-class Database {
-    private $host;
-    private $db_name;
-    private $username;
-    private $password;
-    public $conn;
-
-    public function __construct() {
-        $this->host = getenv('DB_HOST') ?: 'localhost';
-        $this->db_name = getenv('DB_NAME') ?: 'iit_shelf';
-        $this->username = getenv('DB_USER') ?: 'iit_user';
-        $this->password = getenv('DB_PASSWORD') ?: 'iit_password';
-    }
-
-    public function getConnection() {
-        $this->conn = null;
-        
-        try {
-            $this->conn = new PDO(
-                "mysql:host=" . $this->host . ";dbname=" . $this->db_name . ";charset=utf8mb4",
-                $this->username,
-                $this->password
-            );
-            $this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-            $this->conn->exec("set names utf8mb4");
-            // Set session timezone for MySQL
-            $this->conn->exec("SET time_zone = '+06:00'");
-        } catch(PDOException $exception) {
-            echo json_encode([
-                "success" => false,
-                "message" => "Connection error: " . $exception->getMessage()
-            ]);
-        }
-        
-        return $this->conn;
-    }
-}
+return [
+    'default' => env('DB_CONNECTION', 'mysql'),
+    'connections' => [
+        'mysql' => [
+            'driver' => 'mysql',
+            'host' => env('DB_HOST', '127.0.0.1'),
+            'port' => env('DB_PORT', '3306'),
+            'database' => env('DB_DATABASE', env('DB_NAME', 'iit_shelf')),
+            'username' => env('DB_USERNAME', env('DB_USER', '')),
+            'password' => env('DB_PASSWORD', ''),
+            'unix_socket' => env('DB_SOCKET', ''),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+        ],
+        'auth_temp' => [
+            'driver' => 'mysql',
+            'host' => env('AUTH_TEMP_DB_HOST', env('DB_HOST', '127.0.0.1')),
+            'port' => env('AUTH_TEMP_DB_PORT', env('DB_PORT', '3306')),
+            'database' => env('AUTH_TEMP_DB_DATABASE', 'iit_shelf_auth_temp'),
+            'username' => env('AUTH_TEMP_DB_USERNAME', env('DB_USERNAME', env('DB_USER', ''))),
+            'password' => env('AUTH_TEMP_DB_PASSWORD', env('DB_PASSWORD', '')),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+        ],
+        'preregistration' => [
+            'driver' => 'mysql',
+            'host' => env('PREREG_DB_HOST', env('DB_HOST', '127.0.0.1')),
+            'port' => env('PREREG_DB_PORT', env('DB_PORT', '3306')),
+            'database' => env('PREREG_DB_DATABASE', 'iit_shelf_prereg'),
+            'username' => env('PREREG_DB_USERNAME', env('DB_USERNAME', env('DB_USER', ''))),
+            'password' => env('PREREG_DB_PASSWORD', env('DB_PASSWORD', '')),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+        ],
+    ],
+    'migrations' => ['table' => 'migrations', 'update_date_on_publish' => true],
+];
 ?>

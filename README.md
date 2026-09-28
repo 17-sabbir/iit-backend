@@ -1,291 +1,57 @@
-# IIT Shelf Backend - PHP + MySQL
+# IIT Shelf Laravel API
 
-## Overview
-This is the backend API for the IIT Shelf library management system. It provides RESTful endpoints for authentication, book management, borrowing, and more.
+The backend is a Laravel 12 application. API requests are handled by Laravel controllers, requests, middleware, services, and Eloquent/query-builder code. The former `api/` PHP endpoint tree and dispatcher have been removed. Existing Flutter-compatible `.php` URL suffixes are Laravel route aliases only; no PHP endpoint scripts execute.
 
-## Technology Stack
-- **Language**: PHP 7.4+
-- **Database**: MySQL 5.7+
-- **Architecture**: REST API
+## Requirements
 
-## Prerequisites
+- PHP 8.2+ with PDO MySQL, fileinfo, and OpenSSL extensions
+- Composer
+- MariaDB/MySQL
+- Flutter/Dart for the client
 
-### Install Required Software:
+## Configure
 
-1. **Install PHP**:
-   ```bash
-   # On Ubuntu/Debian
-   sudo apt update
-   sudo apt install php php-mysql php-mbstring php-json
-   
-   # On macOS
-   brew install php
-   
-   # Verify installation
-   php -v
-   ```
+Copy `.env.example` to `.env`, set `APP_KEY`, and configure the main and auxiliary database connections:
 
-2. **Install MySQL**:
-   ```bash
-   # On Ubuntu/Debian
-   sudo apt install mysql-server
-   
-   # On macOS
-   brew install mysql
-   brew services start mysql
-   
-   # Secure MySQL installation
-   sudo mysql_secure_installation
-   ```
+- `DB_*` connects to `iit_shelf`
+- `PREREG_DB_*` connects to `iit_shelf_prereg`
+- `AUTH_TEMP_DB_*` connects to `iit_shelf_auth_temp`
 
-3. **Install Apache (Optional - for production-like setup)**:
-   ```bash
-   # On Ubuntu/Debian
-   sudo apt install apache2
-   sudo systemctl start apache2
-   
-   # On macOS
-   brew install httpd
-   ```
+The preregistration database stores approved registration identities and library settings. The auth-temp database stores OTPs. The connection defaults use local development credentials; configure real credentials locally and do not commit them.
 
-## Quick Setup
+For a fresh database, review the Laravel migrations and run `php artisan migrate` deliberately. Do not run migrations against an existing database without a backup and schema review. The application does not migrate the database automatically at startup.
 
-### 1. Database Setup
+Set `MAIL_MAILER=log` for local development. Use a configured Laravel mail transport for real delivery; external mail is not exercised by the test suite.
+
+## Start
 
 ```bash
-# Login to MySQL
-mysql -u root -p
-
-# Create the database and apply all pending migrations
-php backend/migrate.php
-
-# The runner uses DB_HOST, DB_NAME, DB_USER and DB_PASSWORD when provided.
-# Otherwise it uses the local development defaults.
+composer install
+php artisan key:generate
+php artisan serve --host=0.0.0.0 --port=8000
 ```
 
-### 2. Configure Database Connection
+Flutter uses the shared API client. Configure `API_BASE_URL` at build time when the default emulator/web host is not correct, for example `--dart-define=API_BASE_URL=http://192.168.1.20:8000`.
 
-Set database environment variables instead of editing source files:
-```bash
-DB_HOST=localhost
-DB_NAME=iit_shelf
-DB_USER=iit_user
-DB_PASSWORD=your_mysql_password
-```
-
-To add a schema change, create a new SQL file in `backend/migrations/` with the
-next numeric prefix, then run `php backend/migrate.php` again. Applied migrations
-are recorded in the `schema_migrations` table and their checksums are verified.
-
-### 3. Start PHP Development Server
+## Validate
 
 ```bash
-# Navigate to backend directory
-cd backend
-
-# Start PHP built-in server
-php -S localhost:8000
-
-# Your API will be available at: http://localhost:8000
+php artisan test
+flutter analyze
 ```
 
-## API Endpoints
+Database-backed tests use transaction rollback. They require the main, preregistration, and auth-temp databases and their expected tables. Upload tests should use temporary files; never clear the existing `uploads/` directory as part of testing.
 
-### Authentication
+Auxiliary schemas can be created with the idempotent SQL files under `database/` and `setup_prereg_database.sql`. These scripts create empty tables/default library settings; they do not seed preregistered identities. Add authorized identities through the institution's approved data process.
 
-#### Register User
-```
-POST http://localhost:8000/api/auth/register.php
+## Structure
 
-Body (JSON):
-{
-  "email": "student@iit.edu",
-  "password": "password123",
-  "phone": "+8801234567890",
-  "role": "student"
-}
-```
-
-#### Login
-```
-POST http://localhost:8000/api/auth/login.php
-
-Body (JSON):
-{
-  "email": "student@iit.edu",
-  "password": "password123"
-}
-```
-
-### Books
-
-#### Get All Books
-```
-GET http://localhost:8000/api/books/get_books.php
-GET http://localhost:8000/api/books/get_books.php?search=java
-GET http://localhost:8000/api/books/get_books.php?category=Computer Science
-```
-
-#### Add Book (Librarian/Director only)
-```
-POST http://localhost:8000/api/books/add_book.php
-
-Body (JSON):
-{
-  "title": "Introduction to Algorithms",
-  "author": "Thomas H. Cormen",
-  "isbn": "978-0262033848",
-  "category": "Computer Science",
-  "quantity": 5,
-  "shelf_id": 1,
-  "cover_image": "https://example.com/cover.jpg",
-  "pdf_url": "",
-  "description": "Comprehensive algorithms textbook"
-}
-```
-
-### Borrow/Return
-
-#### Borrow Book
-```
-POST http://localhost:8000/api/borrow/borrow_book.php
-
-Body (JSON):
-{
-  "user_id": 1,
-  "book_id": 3
-}
-```
-
-#### Return Book
-```
-POST http://localhost:8000/api/borrow/return_book.php
-
-Body (JSON):
-{
-  "borrow_id": 1
-}
-```
-
-## Directory Structure
-
-```
-backend/
-├── api/
-│   ├── auth/
-│   │   ├── login.php
-│   │   └── register.php
-│   ├── books/
-│   │   ├── get_books.php
-│   │   └── add_book.php
-│   └── borrow/
-│       ├── borrow_book.php
-│       └── return_book.php
-├── config/
-│   └── database.php
-├── migrations/
-│   └── 000_initial_schema.sql
-├── migrate.php
-└── README.md
-```
-
-## Testing the API
-
-### Using curl:
-```bash
-# Test registration
-curl -X POST http://localhost:8000/api/auth/register.php \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@iit.edu","password":"password123","phone":"+8801234567890"}'
-
-# Test login
-curl -X POST http://localhost:8000/api/auth/login.php \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@iit.edu","password":"password123"}'
-
-# Test get books
-curl http://localhost:8000/api/books/get_books.php
-```
-
-### Using Postman:
-1. Download and install Postman
-2. Create a new request
-3. Set the method (GET/POST)
-4. Enter the URL
-5. For POST requests, add JSON body in the Body tab (select "raw" and "JSON")
-
-## Integrating with Flutter
-
-In your Flutter app, use the `http` package:
-
-```dart
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-
-// Login example
-Future<void> login(String email, String password) async {
-  final response = await http.post(
-    Uri.parse('http://localhost:8000/api/auth/login.php'),
-    headers: {'Content-Type': 'application/json'},
-    body: jsonEncode({
-      'email': email,
-      'password': password,
-    }),
-  );
-  
-  if (response.statusCode == 200) {
-    final data = jsonDecode(response.body);
-    print('Login successful: ${data['message']}');
-  }
-}
-```
-
-## Deployment
-
-For production deployment:
-
-1. **Use Apache/Nginx** instead of PHP built-in server
-2. **Enable HTTPS** for secure communication
-3. **Update CORS settings** in `config/database.php`
-4. **Set strong database passwords**
-5. **Implement JWT tokens** for authentication
-6. **Add rate limiting** and security measures
-
-## Default Credentials
-
-- **Librarian**: librarian@iit.edu / password
-- **Director**: director@iit.edu / password
-
-## Troubleshooting
-
-### Connection refused
-- Make sure PHP server is running: `php -S localhost:8000`
-- Check if port 8000 is available: `netstat -an | grep 8000`
-
-### Database connection error
-- Verify MySQL is running: `sudo systemctl status mysql`
-- Check credentials in `config/database.php`
-- Ensure database exists: `mysql -u root -p -e "SHOW DATABASES;"`
-
-### CORS errors in Flutter
-- Headers are already set in `config/database.php`
-- For production, update the `Access-Control-Allow-Origin` to your specific domain
-
-## Next Steps
-
-You can extend this backend by adding:
-- User profile management
-- Book reservation system
-- Notifications API
-- Reports and analytics
-- Image upload handling
-- PDF file storage
-- Email notifications
-- JWT authentication
-
-## Support
-
-For issues or questions, refer to:
-- PHP Documentation: https://www.php.net/docs.php
-- MySQL Documentation: https://dev.mysql.com/doc/
-- Flutter HTTP package: https://pub.dev/packages/http
+- `app/Http/Controllers`: Laravel endpoint behavior
+- `app/Http/Requests`: validation
+- `app/Http/Middleware`: bearer authentication, role, permission, and owner checks
+- `app/Services`: authentication, token, catalog, and borrow workflows
+- `routes/api.php`: Laravel API routes
+- `database/migrations`: Laravel schema migrations
+- `database/seeders`: Laravel seeders
+- `public/index.php`: Laravel front controller
+- `uploads/`: existing user-uploaded files; do not delete during cleanup

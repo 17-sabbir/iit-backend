@@ -1,0 +1,4 @@
+<?php
+namespace App\Models;
+use Illuminate\Database\Eloquent\Model;
+class TransactionHistory extends Model { protected $table = 'Transaction_History'; protected $primaryKey = 'history_id'; public $timestamps = false; protected $fillable = ['transaction_type', 'user_email', 'book_id', 'copy_id', 'amount', 'status', 'description', 'performed_by', 'transaction_date', 'transaction_time']; public function user() { return $this->belongsTo(User::class, 'user_email', 'email'); } public function book() { return $this->belongsTo(Book::class, 'book_id', 'isbn'); } public function copy() { return $this->belongsTo(BookCopy::class, 'copy_id', 'copy_id'); } }
